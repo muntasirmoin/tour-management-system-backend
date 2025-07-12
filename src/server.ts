@@ -2,6 +2,7 @@ import { Server } from "http";
 import mongoose from "mongoose";
 import app from "./app";
 import { envVars } from "./app/config/env";
+import { seedSuperAdmin } from "./app/utils/seedSuperAdmin";
 
 // db_name :ph_tour_managment
 // db_pass : D4o1fbOClS9tmlZW
@@ -24,7 +25,11 @@ const startServer = async () => {
   }
 };
 
-startServer();
+(async () => {
+  await startServer();
+
+  await seedSuperAdmin();
+})();
 
 process.on("unhandledRejection", (err) => {
   console.log("unhandled rejection detected... server shuting down..:", err);
