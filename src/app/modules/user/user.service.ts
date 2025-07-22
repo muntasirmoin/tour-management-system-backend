@@ -1,11 +1,12 @@
+import bcryptjs from "bcryptjs";
+import httpStatus from "http-status-codes";
+import { JwtPayload } from "jsonwebtoken";
+import { envVars } from "../../config/env";
 import AppError from "../../errorHelpers/AppError";
+import { QueryBuilder } from "../../utils/QueryBuilder";
+import { userSearchableFields } from "./user.constant";
 import { IAuthProvider, IUser, Role } from "./user.interface";
 import { User } from "./user.model";
-import { StatusCodes as httpStatus } from "http-status-codes";
-import bcrypt from "bcryptjs";
-import bcryptjs from "bcryptjs";
-import { envVars } from "../../config/env";
-import { JwtPayload } from "jsonwebtoken";
 
 const createUser = async (payload: Partial<IUser>) => {
   const { email, password, ...rest } = payload;
@@ -13,17 +14,13 @@ const createUser = async (payload: Partial<IUser>) => {
   const isUserExist = await User.findOne({ email });
 
   if (isUserExist) {
-    throw new AppError(httpStatus.BAD_REQUEST, "user already exist");
+    throw new AppError(httpStatus.BAD_REQUEST, "User Already Exist");
   }
 
-  const hashedPassword = await bcrypt.hash(
+  const hashedPassword = await bcryptjs.hash(
     password as string,
     Number(envVars.BCRYPT_SALT_ROUND)
   );
-  // const isPasswordMatch = await bcrypt.compare(
-  //   password as string,
-  //   hashedPassword
-  // );
 
   const authProvider: IAuthProvider = {
     provider: "credentials",
@@ -91,21 +88,35 @@ const updateUser = async (
   return newUpdatedUser;
 };
 
-const getAllUsers = async () => {
-  const users = await User.find({});
+const getAllUsers = async (query: Record<string, string>) => {
+  const queryBuilder = new QueryBuilder(User.find(), query);
+  const usersData = queryBuilder
+    .filter()
+    .search(userSearchableFields)
+    .sort()
+    .fields()
+    .paginate();
 
-  const totalUsers = await User.countDocuments();
+  const [data, meta] = await Promise.all([
+    usersData.build(),
+    queryBuilder.getMeta(),
+  ]);
 
   return {
-    data: users,
-    meta: {
-      total: totalUsers,
-    },
+    data,
+    meta,
+  };
+};
+const getSingleUser = async (id: string) => {
+  const user = await User.findById(id);
+  return {
+    data: user,
   };
 };
 
 export const UserServices = {
   createUser,
   getAllUsers,
+  getSingleUser,
   updateUser,
 };
