@@ -1,45 +1,23 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { NextFunction, Request, Response } from "express";
+import httpStatus from "http-status-codes";
+import { JwtPayload } from "jsonwebtoken";
+import passport from "passport";
+import { envVars } from "../../config/env";
+import AppError from "../../errorHelpers/AppError";
 import { catchAsync } from "../../utils/catchAsync";
 import { sendResponse } from "../../utils/sendResponse";
-import { StatusCodes as httpStatus } from "http-status-codes";
-import { AuthServices } from "./auth.service";
-import AppError from "../../errorHelpers/AppError";
 import { setAuthCookie } from "../../utils/setCookie";
-import { JwtPayload } from "jsonwebtoken";
-import { envVars } from "../../config/env";
 import { createUserTokens } from "../../utils/userTokens";
-import passport from "passport";
-
-// const credentialsLogin = catchAsync(async (req: Request, res: Response) => {
-//   // const loginInfo = await AuthServices.credentialsLogin(req.body);
-//   //
-
-//   // res.cookie("accessToken", loginInfo.accessToken, {
-//   //   httpOnly: true,
-//   //   secure: false,
-//   // });
-
-//   // res.cookie("refreshToken", loginInfo.refreshToken, {
-//   //   httpOnly: true,
-//   //   secure: false,
-//   // });
-//   setAuthCookie(res, loginInfo);
-//   //
-//   sendResponse(res, {
-//     success: true,
-//     statusCode: httpStatus.OK,
-//     message: "user Logged In successfully",
-//     data: loginInfo,
-//   });
-// });
+import { AuthServices } from "./auth.service";
 
 const credentialsLogin = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     // const loginInfo = await AuthServices.credentialsLogin(req.body)
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     passport.authenticate("local", async (err: any, user: any, info: any) => {
+      console.log("user:", user);
       if (err) {
         // ❌❌❌❌❌
         // throw new AppError(401, "Some error")
@@ -77,18 +55,25 @@ const credentialsLogin = catchAsync(
         },
       });
     })(req, res, next);
+
+    // res.cookie("accessToken", loginInfo.accessToken, {
+    //     httpOnly: true,
+    //     secure: false
+    // })
+
+    // res.cookie("refreshToken", loginInfo.refreshToken, {
+    //     httpOnly: true,
+    //     secure: false,
+    // })
   }
 );
 const getNewAccessToken = catchAsync(
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async (req: Request, res: Response, next: NextFunction) => {
     const refreshToken = req.cookies.refreshToken;
-    // const refreshToken = req.headers.authorization;
-
     if (!refreshToken) {
       throw new AppError(
         httpStatus.BAD_REQUEST,
-        "No refresh token received from cookies"
+        "No refresh token recieved from cookies"
       );
     }
     const tokenInfo = await AuthServices.getNewAccessToken(
@@ -96,23 +81,21 @@ const getNewAccessToken = catchAsync(
     );
 
     // res.cookie("accessToken", tokenInfo.accessToken, {
-    //   httpOnly: true,
-    //   secure: false,
-    // });
+    //     httpOnly: true,
+    //     secure: false
+    // })
 
     setAuthCookie(res, tokenInfo);
 
     sendResponse(res, {
       success: true,
       statusCode: httpStatus.OK,
-      message: "New Access Token Retrieved Successfully",
+      message: "New Access Token Retrived Successfully",
       data: tokenInfo,
     });
   }
 );
-
 const logout = catchAsync(
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async (req: Request, res: Response, next: NextFunction) => {
     res.clearCookie("accessToken", {
       httpOnly: true,
@@ -133,15 +116,13 @@ const logout = catchAsync(
     });
   }
 );
-
-const resetPassword = catchAsync(
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+const changePassword = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const newPassword = req.body.newPassword;
     const oldPassword = req.body.oldPassword;
     const decodedToken = req.user;
 
-    await AuthServices.resetPassword(
+    await AuthServices.changePassword(
       oldPassword,
       newPassword,
       decodedToken as JwtPayload
@@ -155,9 +136,50 @@ const resetPassword = catchAsync(
     });
   }
 );
+const resetPassword = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const decodedToken = req.user;
 
+    await AuthServices.resetPassword(req.body, decodedToken as JwtPayload);
+
+    sendResponse(res, {
+      success: true,
+      statusCode: httpStatus.OK,
+      message: "Password reset Successfully",
+      data: null,
+    });
+  }
+);
+const setPassword = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const decodedToken = req.user as JwtPayload;
+    const { password } = req.body;
+
+    await AuthServices.setPassword(decodedToken.userId, password);
+
+    sendResponse(res, {
+      success: true,
+      statusCode: httpStatus.OK,
+      message: "Password Changed Successfully",
+      data: null,
+    });
+  }
+);
+const forgotPassword = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const { email } = req.body;
+
+    await AuthServices.forgotPassword(email);
+
+    sendResponse(res, {
+      success: true,
+      statusCode: httpStatus.OK,
+      message: "Email Sent Successfully",
+      data: null,
+    });
+  }
+);
 const googleCallbackController = catchAsync(
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async (req: Request, res: Response, next: NextFunction) => {
     let redirectTo = req.query.state ? (req.query.state as string) : "";
 
@@ -167,8 +189,6 @@ const googleCallbackController = catchAsync(
 
     // /booking => booking , => "/" => ""
     const user = req.user;
-
-    // console.log(user);
 
     if (!user) {
       throw new AppError(httpStatus.NOT_FOUND, "User Not Found");
@@ -194,5 +214,8 @@ export const AuthControllers = {
   getNewAccessToken,
   logout,
   resetPassword,
+  setPassword,
+  forgotPassword,
+  changePassword,
   googleCallbackController,
 };
