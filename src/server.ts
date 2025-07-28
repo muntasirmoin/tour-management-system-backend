@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 import app from "./app";
 import { envVars } from "./app/config/env";
 import { seedSuperAdmin } from "./app/utils/seedSuperAdmin";
+import { connectRedis } from "./app/config/redis.config";
 
 // db_name :ph_tour_managment
 // db_pass : D4o1fbOClS9tmlZW
@@ -26,6 +27,8 @@ const startServer = async () => {
 };
 
 (async () => {
+  await connectRedis();
+
   await startServer();
 
   await seedSuperAdmin();

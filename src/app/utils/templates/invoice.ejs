@@ -1,0 +1,73 @@
+<!-- <h1>Invoice for Booking ></h1>
+<p>Payment ID:</p>
+<p>Amount Paid:</p>
+<p>Thank you for your booking!</p>
+<p><a>Download Invoice PDF</a></p> -->
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Your Booking Invoice</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        color: #333;
+      }
+      .invoice-container {
+        max-width: 600px;
+        margin: auto;
+        padding: 20px;
+        border: 1px solid #ddd;
+        background-color: #f9f9f9;
+      }
+      h1 {
+        color: #2c3e50;
+      }
+      .section {
+        margin-bottom: 15px;
+      }
+      .label {
+        font-weight: bold;
+      }
+      .footer {
+        margin-top: 20px;
+        font-size: 14px;
+        color: #888;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="invoice-container">
+      <h1>Invoice for Booking</h1>
+
+      <div class="section">
+        <p><span class="label">Name:</span> <%= userName %></p>
+        <p><span class="label">Tour:</span> <%= tourTitle %></p>
+        <p><span class="label">Guest Count:</span> <%= guestCount %></p>
+        <p>
+          <span class="label">Booking Date:</span> <%=
+          bookingDate.toDateString() %>
+        </p>
+      </div>
+
+      <div class="section">
+        <p><span class="label">Transaction ID:</span> <%= transactionId %></p>
+        <p>
+          <span class="label">Total Amount:</span> $<%= totalAmount.toFixed(2)
+          %>
+        </p>
+      </div>
+
+      <div class="section">
+        <p>
+          Thank you for your booking! A PDF copy of your invoice is attached.
+        </p>
+      </div>
+
+      <div class="footer">
+        <p>Need help? Contact our support team.</p>
+      </div>
+    </div>
+  </body>
+</html>
